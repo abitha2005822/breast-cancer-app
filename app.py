@@ -62,7 +62,7 @@ if st.button("Predict Diagnosis", type="primary"):
     result_text = "Malignant (Cancerous)" if prediction == 1 else "Benign (Non-Cancerous)"
     
     # Save to SQLite Database with Timestamp
-    current_time = datetime.now()
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     c.execute("INSERT INTO predictions (timestamp, prediction) VALUES (?, ?)", (current_time, result_text))
     conn.commit()
     
