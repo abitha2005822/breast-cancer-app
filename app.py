@@ -38,8 +38,7 @@ def load_model():
 
 model = load_model()
 
-st.title("🩺 Breast Cancer Prediction App")
-
+st.markdown("<h1 style='text-align: center;'>🩺 Breast Cancer Prediction App</h1>", unsafe_allow_html=True)
 # Initialize Session State for Login
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
