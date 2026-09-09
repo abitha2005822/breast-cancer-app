@@ -84,7 +84,6 @@ if not st.session_state['logged_in']:
                     try:
                         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_user, new_pass))
                         conn.commit()
-                        # Auto login immediately after Sign Up
                         st.session_state['logged_in'] = True
                         st.session_state['username'] = new_user
                         st.success("Account created and logged in successfully!")
@@ -157,6 +156,7 @@ else:
     ORDER BY id DESC
     """
 
+    # Parameters explicitly provided as a tuple
     df_history = pd.read_sql_query(query, conn, params=(st.session_state['username'], one_week_ago))
 
     if not df_history.empty:
