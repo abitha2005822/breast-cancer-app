@@ -1,4 +1,5 @@
 streamlit
 scikit-learn
-numpy
 pandas
+numpy
+streamlit-authenticator==0.3.2
