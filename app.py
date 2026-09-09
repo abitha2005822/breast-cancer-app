@@ -38,7 +38,9 @@ def load_model():
 
 model = load_model()
 
+# Centered Title Styling
 st.markdown("<h1 style='text-align: center;'>🩺 Breast Cancer Prediction App</h1>", unsafe_allow_html=True)
+
 # Initialize Session State for Login
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -49,17 +51,17 @@ if 'username' not in st.session_state:
 if not st.session_state['logged_in']:
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # 3 columns layout to center the login box
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     
     with col2:
         tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
 
         with tab1:
-            st.subheader("Login to your account")
+            st.markdown("<h3 style='text-align: center;'>Login to your account</h3>", unsafe_allow_html=True)
             login_user = st.text_input("Username", key="login_user")
             login_pass = st.text_input("Password", type="password", key="login_pass")
             
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Login", type="primary", use_container_width=True):
                 c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (login_user, login_pass))
                 user = c.fetchone()
@@ -72,18 +74,23 @@ if not st.session_state['logged_in']:
                     st.error("Invalid Username or Password")
 
         with tab2:
-            st.subheader("Create a new account")
+            st.markdown("<h3 style='text-align: center;'>Create a new account</h3>", unsafe_allow_html=True)
             new_user = st.text_input("Choose Username", key="new_user")
             new_pass = st.text_input("Choose Password", type="password", key="new_pass")
             
+            st.markdown("<br>", unsafe_allow_html=True)
             if st.button("Sign Up", use_container_width=True):
                 if new_user and new_pass:
                     try:
                         c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_user, new_pass))
                         conn.commit()
-                        st.success("Account created! Go to Login tab.")
+                        # Auto login immediately after Sign Up
+                        st.session_state['logged_in'] = True
+                        st.session_state['username'] = new_user
+                        st.success("Account created and logged in successfully!")
+                        st.rerun()
                     except sqlite3.IntegrityError:
-                        st.error("Username already taken.")
+                        st.error("Username already taken. Please choose another one.")
                 else:
                     st.warning("Please fill in both fields.")
 
