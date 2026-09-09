@@ -46,41 +46,47 @@ if 'logged_in' not in st.session_state:
 if 'username' not in st.session_state:
     st.session_state['username'] = ""
 
-# Main Auth View (If Not Logged In)
+# Centered Auth View (If Not Logged In)
 if not st.session_state['logged_in']:
-    tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 3 columns layout to center the login box
+    col1, col2, col3 = st.columns([1, 1.5, 1])
+    
+    with col2:
+        tab1, tab2 = st.tabs(["🔐 Login", "📝 Sign Up"])
 
-    with tab1:
-        st.subheader("Login to your account")
-        login_user = st.text_input("Username", key="login_user")
-        login_pass = st.text_input("Password", type="password", key="login_pass")
-        
-        if st.button("Login", type="primary"):
-            c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (login_user, login_pass))
-            user = c.fetchone()
-            if user:
-                st.session_state['logged_in'] = True
-                st.session_state['username'] = login_user
-                st.success("Logged in successfully!")
-                st.rerun()
-            else:
-                st.error("Invalid Username or Password")
+        with tab1:
+            st.subheader("Login to your account")
+            login_user = st.text_input("Username", key="login_user")
+            login_pass = st.text_input("Password", type="password", key="login_pass")
+            
+            if st.button("Login", type="primary", use_container_width=True):
+                c.execute("SELECT * FROM users WHERE username = ? AND password = ?", (login_user, login_pass))
+                user = c.fetchone()
+                if user:
+                    st.session_state['logged_in'] = True
+                    st.session_state['username'] = login_user
+                    st.success("Logged in successfully!")
+                    st.rerun()
+                else:
+                    st.error("Invalid Username or Password")
 
-    with tab2:
-        st.subheader("Create a new account")
-        new_user = st.text_input("Choose Username", key="new_user")
-        new_pass = st.text_input("Choose Password", type="password", key="new_pass")
-        
-        if st.button("Sign Up"):
-            if new_user and new_pass:
-                try:
-                    c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_user, new_pass))
-                    conn.commit()
-                    st.success("Account created successfully! Please click on Login tab to enter.")
-                except sqlite3.IntegrityError:
-                    st.error("Username already taken. Please choose another one.")
-            else:
-                st.warning("Please fill in both fields.")
+        with tab2:
+            st.subheader("Create a new account")
+            new_user = st.text_input("Choose Username", key="new_user")
+            new_pass = st.text_input("Choose Password", type="password", key="new_pass")
+            
+            if st.button("Sign Up", use_container_width=True):
+                if new_user and new_pass:
+                    try:
+                        c.execute("INSERT INTO users (username, password) VALUES (?, ?)", (new_user, new_pass))
+                        conn.commit()
+                        st.success("Account created! Go to Login tab.")
+                    except sqlite3.IntegrityError:
+                        st.error("Username already taken.")
+                else:
+                    st.warning("Please fill in both fields.")
 
 # Dashboard View (If Logged In)
 else:
