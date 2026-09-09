@@ -1,61 +1,89 @@
 import streamlit as st
-import numpy as np
-import pandas as pd
 import pickle
+import pandas as pd
+import numpy as np
+import sqlite3
+from datetime import datetime, timedelta
 
-# Load Model
-model = pickle.load(open('breast_cancer_model.pkl', 'rb'))
+# Page Setup
+st.set_page_config(page_title="Breast Cancer Prediction App", layout="wide")
 
-st.set_page_config(page_title="Breast Cancer Diagnosis", layout="wide")
+# Database Connection
+conn = sqlite3.connect('history.db', check_same_thread=False)
+c = conn.cursor()
+
+# Create History Table if not exists
+c.execute('''
+    CREATE TABLE IF NOT EXISTS predictions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp DATETIME,
+        prediction TEXT
+    )
+''')
+conn.commit()
+
+# Load Trained Model
+@st.cache_resource
+def load_model():
+    with open('breast_cancer_model.pkl', 'rb') as file:
+        return pickle.load(file)
+
+model = load_model()
+
 st.title("🩺 Breast Cancer Prediction App")
+st.write("Enter the patient's clinical parameters below to predict tumor diagnosis.")
 
-# History Storage Initialization
-if 'history' not in st.session_state:
-    st.session_state.history = []
-
+# Input Form
 st.subheader("Patient Input Features")
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    f1 = st.number_input("Clump Thickness", 1, 10, 5)
-    f2 = st.number_input("Uniformity of Cell Size", 1, 10, 5)
-    f3 = st.number_input("Uniformity of Cell Shape", 1, 10, 5)
+    clump_thickness = st.number_input("Clump Thickness", 1, 10, 5)
+    uniformity_cell_size = st.number_input("Uniformity of Cell Size", 1, 10, 5)
+    uniformity_cell_shape = st.number_input("Uniformity of Cell Shape", 1, 10, 5)
 
 with col2:
-    f4 = st.number_input("Marginal Adhesion", 1, 10, 5)
-    f5 = st.number_input("Single Epithelial Cell Size", 1, 10, 5)
-    f6 = st.number_input("Bare Nuclei", 1, 10, 5)
+    marginal_adhesion = st.number_input("Marginal Adhesion", 1, 10, 5)
+    single_epithelial_size = st.number_input("Single Epithelial Cell Size", 1, 10, 5)
+    bare_nuclei = st.number_input("Bare Nuclei", 1, 10, 5)
 
 with col3:
-    f7 = st.number_input("Bland Chromatin", 1, 10, 5)
-    f8 = st.number_input("Normal Nucleoli", 1, 10, 5)
-    f9 = st.number_input("Mitoses", 1, 10, 5)
+    bland_chromatin = st.number_input("Bland Chromatin", 1, 10, 5)
+    normal_nucleoli = st.number_input("Normal Nucleoli", 1, 10, 5)
+    mitoses = st.number_input("Mitoses", 1, 10, 5)
 
-if st.button("Predict"):
-    features = np.array([[f1, f2, f3, f4, f5, f6, f7, f8, f9]])
+# Prediction Logic
+if st.button("Predict Diagnosis", type="primary"):
+    features = np.array([[clump_thickness, uniformity_cell_size, uniformity_cell_shape,
+                          marginal_adhesion, single_epithelial_size, bare_nuclei,
+                          bland_chromatin, normal_nucleoli, mitoses]])
+    
     prediction = model.predict(features)[0]
+    result_text = "Malignant (Cancerous)" if prediction == 1 else "Benign (Non-Cancerous)"
     
-    result = "Malignant (Cancerous)" if prediction == 4 else "Benign (Non-Cancerous)"
+    # Save to SQLite Database with Timestamp
+    current_time = datetime.now()
+    c.execute("INSERT INTO predictions (timestamp, prediction) VALUES (?, ?)", (current_time, result_text))
+    conn.commit()
     
-    if prediction == 4:
-        st.error(f"Prediction Result: *{result}*")
+    if prediction == 1:
+        st.error(f"*Prediction Result:* {result_text}")
     else:
-        st.success(f"Prediction Result: *{result}*")
-        
-    # Save to Session History
-    st.session_state.history.append({
-        "Clump Thickness": f1,
-        "Cell Size": f2,
-        "Prediction": result
-    })
+        st.success(f"*Prediction Result:* {result_text}")
 
-# Display History Section
-if st.session_state.history:
-    st.markdown("---")
-    st.subheader("📋 Prediction History")
-    df_history = pd.DataFrame(st.session_state.history)
+# History Section (Past 7 Days Data Only)
+st.markdown("---")
+st.subheader("📋 Past 1 Week Prediction History")
+
+# Query last 7 days records
+one_week_ago = datetime.now() - timedelta(days=7)
+df_history = pd.read_sql_query(
+    "SELECT timestamp AS 'Date & Time', prediction AS 'Prediction Result' FROM predictions WHERE timestamp >= ? ORDER BY id DESC", 
+    conn, 
+    params=(one_week_ago,)
+)
+
+if not df_history.empty:
     st.dataframe(df_history, use_container_width=True)
-    
-    if st.button("Clear History"):
-        st.session_state.history = []
-        st.rerun()
+else:
+    st.info("No prediction history recorded in the past 7 days.")
