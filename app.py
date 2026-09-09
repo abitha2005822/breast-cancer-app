@@ -8,6 +8,12 @@ from datetime import datetime, timedelta
 # Page Setup
 st.set_page_config(page_title="Breast Cancer Prediction App", layout="wide")
 
+# Google Search Console Meta Tag Verification
+st.markdown(
+    '<meta name="google-site-verification" content="mOKqDytv1fu9dm" />',
+    unsafe_allow_html=True
+)
+
 # Database Connection
 conn = sqlite3.connect('history.db', check_same_thread=False)
 c = conn.cursor()
@@ -29,11 +35,11 @@ c.execute('''
     )
 ''')
 
-# Ensure username column exists if old table was created without it
+# Ensure username column exists
 try:
     c.execute("ALTER TABLE predictions ADD COLUMN username TEXT")
 except sqlite3.OperationalError:
-    pass  # Column already exists
+    pass
 
 conn.commit()
 
