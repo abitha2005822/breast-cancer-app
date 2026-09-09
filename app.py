@@ -77,11 +77,16 @@ st.subheader("📋 Past 1 Week Prediction History")
 
 # Query last 7 days records
 one_week_ago = datetime.now() - timedelta(days=7)
-df_history = pd.read_sql_query(
-   "SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) AS 'Date & Time', prediction AS 'Prediction Result' FROM predictions WHERE timestamp >= ? ORDER BY id DESC"
-    conn, 
-    params=(one_week_ago,)
-)
+
+query = """
+SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) AS "Date & Time", 
+       prediction AS "Prediction Result" 
+FROM predictions 
+WHERE timestamp >= ? 
+ORDER BY id DESC
+"""
+
+df_history = pd.read_sql_query(query, conn, params=(one_week_ago,))
 
 if not df_history.empty:
     st.dataframe(df_history, use_container_width=True)
