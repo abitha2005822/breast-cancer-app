@@ -28,6 +28,13 @@ c.execute('''
         password TEXT
     )
 ''')
+
+# Ensure username column exists if old table was created without it
+try:
+    c.execute("ALTER TABLE predictions ADD COLUMN username TEXT")
+except sqlite3.OperationalError:
+    pass  # Column already exists
+
 conn.commit()
 
 # Load Trained Model
@@ -132,7 +139,7 @@ else:
         prediction = model.predict(features)[0]
         result_text = "Malignant (Cancerous)" if prediction == 1 else "Benign (Non-Cancerous)"
         
-        current_time = datetime.now()
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         c.execute("INSERT INTO predictions (username, timestamp, prediction) VALUES (?, ?, ?)", 
                   (st.session_state['username'], current_time, result_text))
         conn.commit()
@@ -146,18 +153,17 @@ else:
     st.markdown("---")
     st.subheader(f"📋 Past 1 Week History for {st.session_state['username']}")
 
-    one_week_ago = datetime.now() - timedelta(days=7)
+    one_week_ago_str = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d %H:%M:%S')
 
     query = """
-    SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) AS "Date & Time", 
+    SELECT timestamp AS "Date & Time", 
            prediction AS "Prediction Result" 
     FROM predictions 
     WHERE username = ? AND timestamp >= ? 
     ORDER BY id DESC
     """
 
-    # Parameters explicitly provided as a tuple
-    df_history = pd.read_sql_query(query, conn, params=(st.session_state['username'], one_week_ago))
+    df_history = pd.read_sql_query(query, conn, params=[st.session_state['username'], one_week_ago_str])
 
     if not df_history.empty:
         st.dataframe(df_history, use_container_width=True)
